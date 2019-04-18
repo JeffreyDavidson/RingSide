@@ -273,7 +273,7 @@ class CreateSinglesMatchTest extends TestCase
         $data = data_set($validParams, 'matches.*.competitors', null);
 
         $response = $this->post(route('events.matches.store', $event), $data);
-        dd($response);
+        // dd($response);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches.*.competitors');

@@ -25,7 +25,6 @@ class MatchCompetitorsAreValid implements Rule
         }
 
         $sides = $value['competitors'];
-        dd($sides);
 
         if (!$sides || !is_array($sides)) {
             return true;
