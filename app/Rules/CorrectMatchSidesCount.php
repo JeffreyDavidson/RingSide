@@ -16,7 +16,14 @@ class CorrectMatchSidesCount implements Rule
      */
     public function passes($attribute, $value)
     {
-        return $this->size($value) == $this->expected($value);
+        $type = MatchType::find($value['match_type_id']);
+        
+        // Match type was not found; pretend it succeeded
+        if (!$type) {
+            return true;
+        }
+
+        return count($value['competitors']) == $type->number_of_sides;
     }
 
     /**
@@ -26,30 +33,6 @@ class CorrectMatchSidesCount implements Rule
      */
     public function message()
     {
-        return 'Incorrect number of competitors.';
-    }
-
-    /**
-     * Get the amount of competitors added for the match
-     *
-     * @param  integer  $value
-     * @return integer
-     */
-    private function size($value): int
-    {
-        return count($value['competitors']);
-    }
-
-    /**
-     * Get the amount of competitors for the given match type.
-     *
-     * @param  integer  $value
-     * @return integer
-     */
-    private function expected($value): int
-    {
-        $type = MatchType::find($value['match_type_id']);
-
-        return $type->number_of_sides;
+        return 'Incorrect number of sides.';
     }
 }

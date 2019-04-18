@@ -13,5 +13,6 @@ class MatchType extends Model
      */
     protected $casts = [
         'number_of_sides' => 'integer',
+        'number_of_competitors' => 'integer',
      ];
 }

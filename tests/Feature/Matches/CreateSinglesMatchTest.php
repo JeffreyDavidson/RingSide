@@ -94,7 +94,7 @@ class CreateSinglesMatchTest extends TestCase
     }
 
     /** @test */
-    public function an_administrator_can_create_a_matches_for_a_scheduled_event()
+    public function an_administrator_can_create_matches_for_a_scheduled_event()
     {
         $this->actAs('administrator');
         $event = factory(Event::class)->states('scheduled')->create();
@@ -103,13 +103,12 @@ class CreateSinglesMatchTest extends TestCase
 
         $response->assertRedirect(route('events.matches.index', $event));
         tap($event->fresh()->matches->first(), function ($match) {
-            // Test competitors here
             $this->assertEquals('This is an example match preview.', $match->preview);
         });
     }
 
     /** @test */
-    public function a_basic_user_cannot_create_an_event()
+    public function a_basic_user_cannot_create_matches_for_an_event()
     {
         $this->actAs('basic-user');
         $event = factory(Event::class)->states('scheduled')->create();
@@ -120,7 +119,7 @@ class CreateSinglesMatchTest extends TestCase
     }
 
     /** @test */
-    public function a_guest_cannot_create_an_event()
+    public function a_guest_cannot_create_matches_for_an_event()
     {
         $event = factory(Event::class)->states('scheduled')->create();
 
@@ -132,7 +131,6 @@ class CreateSinglesMatchTest extends TestCase
     /** @test */
     public function matches_are_required()
     {
-        // $this->withoutExceptionHandling();
         $this->actAs('administrator');
         $event = factory(Event::class)->states('scheduled')->create();
 
@@ -140,7 +138,6 @@ class CreateSinglesMatchTest extends TestCase
         $data = data_set($validParams, 'matches', null);
 
         $response = $this->post(route('events.matches.store', $event), $data);
-        // dd($response);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches');
@@ -149,7 +146,6 @@ class CreateSinglesMatchTest extends TestCase
     /** @test */
     public function matches_must_be_an_array()
     {
-        // $this->withoutExceptionHandling();
         $this->actAs('administrator');
         $event = factory(Event::class)->states('scheduled')->create();
 
@@ -157,7 +153,21 @@ class CreateSinglesMatchTest extends TestCase
         $data = data_set($validParams, 'matches', 'not-an-array');
 
         $response = $this->post(route('events.matches.store', $event), $data);
-        // dd($response);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('matches');
+    }
+
+    /** @test */
+    public function matches_must_include_at_least_one_match()
+    {
+        $this->actAs('administrator');
+        $event = factory(Event::class)->states('scheduled')->create();
+
+        $validParams = $this->validParams();
+        $data = data_set($validParams, 'matches', []);
+
+        $response = $this->post(route('events.matches.store', $event), $data);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches');
@@ -166,7 +176,6 @@ class CreateSinglesMatchTest extends TestCase
     /** @test */
     public function each_match_type_id_is_required()
     {
-        // $this->withoutExceptionHandling();
         $this->actAs('administrator');
         $event = factory(Event::class)->states('scheduled')->create();
 
@@ -174,7 +183,6 @@ class CreateSinglesMatchTest extends TestCase
         $data = data_set($validParams, 'matches.*.match_type_id', null);
 
         $response = $this->post(route('events.matches.store', $event), $data);
-        // dd($response);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches.*.match_type_id');
@@ -183,7 +191,6 @@ class CreateSinglesMatchTest extends TestCase
     /** @test */
     public function each_match_is_required()
     {
-        // $this->withoutExceptionHandling();
         $this->actAs('administrator');
         $event = factory(Event::class)->states('scheduled')->create();
 
@@ -191,7 +198,6 @@ class CreateSinglesMatchTest extends TestCase
         $data = data_set($validParams, 'matches.*', null);
 
         $response = $this->post(route('events.matches.store', $event), $data);
-        // dd($response);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches.*');
@@ -207,7 +213,6 @@ class CreateSinglesMatchTest extends TestCase
         $data = data_set($validParams, 'matches.*', []);
 
         $response = $this->post(route('events.matches.store', $event), $data);
-        dd($response);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches.*');
@@ -223,7 +228,6 @@ class CreateSinglesMatchTest extends TestCase
         $data = data_set($validParams, 'matches.*.match_type_id', null);
 
         $response = $this->post(route('events.matches.store', $event), $data);
-        // dd($response);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches.*.match_type_id');
@@ -269,6 +273,7 @@ class CreateSinglesMatchTest extends TestCase
         $data = data_set($validParams, 'matches.*.competitors', null);
 
         $response = $this->post(route('events.matches.store', $event), $data);
+        dd($response);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches.*.competitors');
@@ -282,9 +287,8 @@ class CreateSinglesMatchTest extends TestCase
 
         $validParams = $this->validParams();
         $data = data_set($validParams, 'matches.*.competitors', 'not-an-array');
-        // dd($data);
+
         $response = $this->post(route('events.matches.store', $event), $data);
-        // dd($response);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches.*.competitors');
@@ -295,14 +299,12 @@ class CreateSinglesMatchTest extends TestCase
     {
         $this->actAs('administrator');
         $event = factory(Event::class)->states('scheduled')->create();
-        $matchType = MatchType::where('slug', 'singles')->first();
+        // Singles Match requires two sides.
 
         $validParams = $this->validParams();
         $data = data_set($validParams, 'matches.*.competitors', [0 => ['wrestlers' => [1]]]);
-        // dd($data);
 
         $response = $this->post(route('events.matches.store', $event), $data);
-        // dd($response);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches.*');
@@ -315,7 +317,7 @@ class CreateSinglesMatchTest extends TestCase
         $event = factory(Event::class)->states('scheduled')->create();
 
         $validParams = $this->validParams();
-        $data = data_set($validParams, 'matches.*.competitors.*', null);
+        $data = data_set($validParams, 'matches.*.competitors', [0 => null, 1 => null]);
 
         $response = $this->post(route('events.matches.store', $event), $data);
 
@@ -330,13 +332,89 @@ class CreateSinglesMatchTest extends TestCase
         $event = factory(Event::class)->states('scheduled')->create();
 
         $validParams = $this->validParams();
-        $data = data_set($validParams, 'matches.*.competitors.*', 'not-an-array');
+        $data = data_set($validParams, 'matches.*.competitors.*', [0 => 'not-an-array', 1 => 'not-an-array']);
 
         $response = $this->post(route('events.matches.store', $event), $data);
-        // dd($response);
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors('matches.*.competitors.*');
+    }
+
+    /** @test */
+    public function each_match_competitor_is_required()
+    {
+        $this->actAs('administrator');
+        $event = factory(Event::class)->states('scheduled')->create();
+
+        $validParams = $this->validParams();
+        $data = data_set($validParams, 'matches.*.competitors.0.wrestlers.0', 'not-an-integer');
+
+        $response = $this->post(route('events.matches.store', $event), $data);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('matches.*.competitors.*.wrestlers.*');
+    }
+
+
+    /** @test */
+    public function each_match_competitor_must_be_an_integer()
+    {
+        $this->actAs('administrator');
+        $event = factory(Event::class)->states('scheduled')->create();
+
+        $validParams = $this->validParams();
+        $data = data_set($validParams, 'matches.*.competitors.0.wrestlers.0', 'not-an-integer');
+
+        $response = $this->post(route('events.matches.store', $event), $data);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('matches.*.competitors.*.wrestlers.*');
+    }
+
+    /** @test */
+    public function each_match_competitor_must_exist()
+    {
+        $this->actAs('administrator');
+        $event = factory(Event::class)->states('scheduled')->create();
+
+        $validParams = $this->validParams();
+        $data = data_set($validParams, 'matches.*.competitors.0.wrestlers.0', 999);
+
+        $response = $this->post(route('events.matches.store', $event), $data);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('matches.*.competitors.*.wrestlers.*');
+    }
+
+    /** @test */
+    public function each_match_competitor_can_only_be_involved_in_the_match_once()
+    {
+        $this->actAs('administrator');
+        $event = factory(Event::class)->states('scheduled')->create();
+
+        $validParams = $this->validParams();
+        $data = data_set($validParams, 'matches.*.competitors.0.wrestlers', [1, 1]);
+
+        $response = $this->post(route('events.matches.store', $event), $data);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('matches.*.competitors.*.wrestlers.*');
+    }
+
+    /** @test */
+    public function each_match_competitor_must_be_hired_before_the_event_date()
+    {
+        $this->actAs('administrator');
+        $wrestler = factory(Wrestler::class)->create(['hired_at' => Carbon::today()->addMonths(3)]);
+        $event = factory(Event::class)->create(['date' => Carbon::today()->addDays(3)]);
+
+        $validParams = $this->validParams();
+        $data = data_set($validParams, 'matches.*.competitors.0.wrestlers.0', $wrestler->getKey());
+
+        $response = $this->post(route('events.matches.store', $event), $data);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('matches.*.competitors.*.wrestlers.*');
     }
 
     /** @test */

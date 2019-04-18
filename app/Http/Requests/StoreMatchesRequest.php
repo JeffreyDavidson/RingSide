@@ -2,9 +2,10 @@
 
 namespace App\Http\Requests;
 
-use App\Models\MatchType;
+use Illuminate\Validation\Validator;
 use App\Rules\CorrectMatchSidesCount;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Rules\MatchCompetitorsAreValid;
 
 class StoreMatchesRequest extends FormRequest
 {
@@ -30,70 +31,26 @@ class StoreMatchesRequest extends FormRequest
         $event = $this->route('event');
         $date = $event->date->toDateTimeString();
 
-        $rules = [
+        return [
             'matches' => ['required', 'array', 'min:1'],
             'matches.*' => ['required', 'array'],
-            'matches.*.match_type_id' => ['required', 'int', 'exists:match_types,id'],
+            'matches.*.match_type_id' => ['bail', 'required', 'integer', 'exists:match_types,id'],
             'matches.*.competitors' => ['required', 'array'],
-            'matches.*.competitors.*.wrestlers' => ['required_without:matches.*.competitors.*.tagteams', 'array'],
-            'matches.*.competitors.*.wrestlers.*' => ['required_with:matches.*.competitors.*.wrestlers', 'int', 'exists:wrestlers,id'],
-            'matches.*.competitors.*.tagteams' => ['required_without:matches.*.competitors.*.wrestlers', 'array'],
-            'matches.*.competitors.*.tagteams.*' => ['required_with:matches.*.competitors.*.tagteams', 'int', 'exists:tagteams,id'],
+            'matches.*.competitors.*.wrestlers' => ['sometimes', 'array'],
+            'matches.*.competitors.*.wrestlers.*' => ['required_with:matches.*.competitors.*.wrestlers', 'integer', 'exists:wrestlers,id'],
+            'matches.*.competitors.*.tagteams' => ['sometimes', 'array'],
+            'matches.*.competitors.*.tagteams.*' => ['required_with:matches.*.competitors.*.tagteams', 'integer', 'exists:tagteams,id'],
             'matches.*.preview' => ['required', 'string'],
-            // 'matches.*' => [new CorrectMatchSidesCount],
         ];
-
-        return $rules;
     }
 
-    public function withValidator($validator)
+    public function withValidator(Validator $validator)
     {
-        $validator->after(function ($validator) {
-            if (is_array($this->matches)) {
-                foreach ($this->matches as $key => $match) {
-                    if (is_array($match)) {
-                        if (!$type = MatchType::find($match['match_type_id'])) {
-                            continue;
-                        }
-
-                        if (!is_array($match['competitors'])) {
-                            continue;
-                        }
-
-                        if (!$this->matchHasCorrectSidesCount($match, $type)) {
-                            $validator->errors()->add("matches.{$key}.competitors", 'Something is wrong with this field!');
-                        }
-
-                        if (!$this->matchHasCorrectCompetitorCount($match)) {
-                            $validator->errors()->add("matches.{$key}.competitors", 'Something is wrong with this field!');
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @param  array  $match
-     * @return bool
-     */
-    private function matchHasCorrectSidesCount($match, $type)
-    {
-        return $type->number_of_sides === count($match['competitors']);
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @param  array  $match
-     * @return bool
-     */
-    private function matchHasCorrectCompetitorCount($match)
-    {
-        $type = MatchType::find($match['match_type_id']);
-
-        return $type->number_of_competitors === count($match['competitors']);
+        $validator->addRules([
+            'matches.*' => [
+                new CorrectMatchSidesCount,
+                new MatchCompetitorsAreValid,
+            ],
+        ]);
     }
 }
